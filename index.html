@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cumple Trivia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Lora:wght@400;600;700&family=Dancing+Script:wght@600;700&display=swap">
+<style>
+:root{
+  --paper:#f6ecdc; --card:#fffdf7; --ink:#3a2a2a; --muted:#8a6a5a; --rose:#c2415d; --rose-d:#8a2539; --pink:#f4b8c4; --ok:#3b9a63;
+  --title:"Archivo Black","Arial Black",system-ui,sans-serif;
+  --body:"Lora",Georgia,serif;
+  --script:"Dancing Script","Brush Script MT",cursive;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--paper) radial-gradient(#e8d6bb 1px,transparent 1.5px) 0 0/18px 18px;color:var(--ink);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* ---------- piezas comunes ---------- */
+.screen{position:fixed;inset:0;z-index:10;overflow-y:auto;background:var(--paper) radial-gradient(#e8d6bb 1px,transparent 1.5px) 0 0/18px 18px}
+.in{max-width:440px;margin:0 auto;padding:calc(26px + env(safe-area-inset-top,0px)) 22px 230px;display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;min-height:100%}
+.in.center{justify-content:center}
+.script{font-family:var(--script);font-weight:700;font-size:30px;color:var(--rose);line-height:1.05}
+h1,h2{font-family:var(--title);font-weight:400;margin:0;line-height:1.02;color:var(--rose);text-shadow:3px 3px 0 var(--pink);transform:rotate(-3deg);text-wrap:balance}
+h1{font-size:clamp(34px,11vw,48px)}
+.note{position:relative;width:100%;background:var(--card);padding:24px 20px 16px;line-height:1.65;font-size:16.5px;box-shadow:0 10px 20px rgba(80,40,20,.15);transform:rotate(1.2deg);background-image:repeating-linear-gradient(transparent 0 27px,#e6eef8 27px 28px);text-align:left}
+.note p{margin:0 0 8px}
+.note b{background:linear-gradient(transparent 55%,#ffd9e1 55%)}
+.firma{font-family:var(--script);font-weight:700;font-size:32px;color:var(--rose);text-align:right;margin:0!important}
+.tape{position:absolute;top:-12px;left:50%;width:110px;height:26px;margin-left:-55px;background:rgba(240,170,185,.72);transform:rotate(-4deg)}
+.cta{width:100%;border:0;border-radius:99px;padding:17px;font-family:var(--title);font-size:19px;background:var(--rose);color:#fff;box-shadow:0 5px 0 var(--rose-d);transition:transform .1s}
+.cta:active{transform:translateY(3px);box-shadow:0 2px 0 var(--rose-d)}
+.cta:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.stamp{font-family:var(--title);font-size:13px;letter-spacing:.12em;color:var(--rose);border:2.5px dashed var(--rose);padding:6px 10px;transform:rotate(-4deg);background:var(--paper);white-space:nowrap}
+.top{display:flex;justify-content:space-between;width:100%;align-items:center;gap:10px}
+.hp{font-size:26px;white-space:nowrap}
+.hp .off{filter:grayscale(1);opacity:.3}
+.ticket{width:100%;border:2.5px dashed var(--rose);background:#fff0f3;padding:14px;transform:rotate(-1deg)}
+.ticket small{display:block;font-family:var(--title);font-size:11px;letter-spacing:.14em;color:var(--rose);margin-bottom:4px}
+.ticket b{font-size:19px}
+.big-emoji{font-size:80px;line-height:1}
+
+/* ---------- pregunta ---------- */
+.q{font-family:var(--title);font-size:clamp(22px,6.6vw,27px);line-height:1.15;text-align:left;width:100%;margin:0}
+.opts{display:flex;flex-direction:column;gap:12px;width:100%}
+.opt{width:100%;border:0;background:var(--card);padding:15px 16px;text-align:left;font-family:var(--body);font-size:17px;box-shadow:0 4px 10px rgba(80,40,20,.12);border-left:6px solid var(--pink);transition:transform .15s}
+.opt:nth-child(odd){transform:rotate(-.6deg)}.opt:nth-child(even){transform:rotate(.6deg)}
+.opt:focus-visible{outline:3px solid var(--rose);outline-offset:2px}
+.opt.big{font-family:var(--title);font-size:21px;letter-spacing:.02em}
+.opt.no{border-left-color:var(--rose);text-decoration:line-through;color:#a08080;animation:shake .4s}
+.opt.si{border-left-color:var(--ok);background:#e3f4e8;font-weight:700}
+@keyframes shake{25%{translate:-6px}50%{translate:6px}75%{translate:-3px}}
+.fb{font-family:var(--script);font-weight:700;font-size:26px;color:var(--rose);min-height:1.2em;margin:0}
+
+/* ---------- mapa ---------- */
+#mapScreen{position:relative;z-index:1}
+.hd{position:sticky;top:0;z-index:4;display:flex;justify-content:space-between;align-items:center;padding:calc(14px + env(safe-area-inset-top,0px)) 18px 22px;background:linear-gradient(var(--paper) 65%,rgba(246,236,220,0))}
+.prog{font-family:var(--title);font-size:14px;background:var(--card);border-radius:99px;padding:7px 14px;box-shadow:0 3px 8px rgba(80,40,20,.15)}
+.mapwrap{max-width:440px;margin:-20px auto 0;padding-bottom:190px}
+.map{position:relative;width:100%;aspect-ratio:360/980}
+.map>svg{position:absolute;inset:0;width:100%;height:100%}
+.node{position:absolute;transform:translate(-50%,-50%);width:19%;aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--title);font-size:clamp(22px,7vw,28px);color:#fff;border:5px solid #fff;padding:0;box-shadow:0 6px 0 rgba(0,0,0,.18),0 10px 18px rgba(80,40,20,.25)}
+.node svg{width:46%}
+.node.done{background:radial-gradient(circle at 35% 30%,#ffe9a3,#f4b400 70%);color:#fff}
+.node.cur{background:radial-gradient(circle at 35% 30%,#ff9db3,var(--rose) 70%);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 6px 0 var(--rose-d),0 0 0 8px rgba(194,65,93,.22),0 0 0 16px rgba(194,65,93,.1)}50%{box-shadow:0 6px 0 var(--rose-d),0 0 0 12px rgba(194,65,93,.28),0 0 0 24px rgba(194,65,93,.08)}}
+.node.lock{background:radial-gradient(circle at 35% 30%,#efe6da,#cdbda8 75%);color:#9d8b74;cursor:not-allowed}
+.node.fin{width:30%;font-size:clamp(34px,11vw,46px)}
+.node.fin.lock{background:radial-gradient(circle at 35% 30%,#fbe3e9,#e9b7c3 75%)}
+.node:focus-visible{outline:3px solid var(--ink);outline-offset:6px}
+.stars{position:absolute;transform:translate(-50%,-50%);font-size:15px;letter-spacing:-2px;white-space:nowrap;pointer-events:none}
+.lbl{position:absolute;transform:translate(-50%,0);font-family:var(--title);font-size:11px;letter-spacing:.08em;color:var(--muted);white-space:nowrap;pointer-events:none}
+.start{position:absolute;transform:translate(-50%,-50%);font-family:var(--title);font-size:12px;letter-spacing:.14em;color:#fff;background:var(--ink);padding:6px 12px;border-radius:99px}
+.stk{position:absolute;font-size:22px;opacity:.85;pointer-events:none}
+.me{position:absolute;transform:translate(-50%,-100%);width:15%;z-index:3;pointer-events:none;transition:left .9s cubic-bezier(.5,0,.3,1),top .9s cubic-bezier(.5,0,.3,1)}
+.me .b{aspect-ratio:1;border-radius:50%;background:#fff;border:4px solid var(--rose);display:flex;align-items:center;justify-content:center;font-size:clamp(18px,6vw,26px);box-shadow:0 4px 10px rgba(0,0,0,.25);animation:bob 1.4s ease-in-out infinite}
+.me:after{content:"";display:block;width:0;height:0;margin:-2px auto 0;border:9px solid transparent;border-top:12px solid var(--rose);border-bottom:0}
+@keyframes bob{50%{transform:translateY(-5px)}}
+.pk{position:absolute;transform:translate(-50%,-50%);width:21%;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.pk svg{width:100%;height:auto;display:block}
+.pk.cl svg{filter:saturate(.45) brightness(1.05)}
+.pk.opened svg{animation:popopen .7s cubic-bezier(.3,1.6,.5,1)}
+@keyframes popopen{0%{transform:scale(.6)}100%{transform:scale(1)}}
+.tag{margin-top:-4px;background:var(--card);border:2px solid var(--ink);border-radius:8px;padding:2px 6px;font-family:var(--script);font-weight:700;font-size:14px;line-height:1.1;text-align:center;transform:rotate(-4deg);max-width:125%}
+.tag b{display:block;font-family:var(--title);font-weight:400;font-size:10px;letter-spacing:.12em;color:var(--rose)}
+.pk.cl .tag{border-color:#cdbda8}.pk.cl .tag b{color:#8a7560}
+.reset{display:block;margin:0 auto;background:none;border:0;color:#b9a68f;font-size:12px;text-decoration:underline;padding:10px}
+
+/* ---------- cartel de desbloqueo ---------- */
+.ovl{position:fixed;inset:0;z-index:30;background:rgba(58,42,42,.55);display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+.pop{background:var(--paper);border-radius:22px;padding:22px 18px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;box-shadow:0 14px 30px rgba(0,0,0,.3);animation:up .4s cubic-bezier(.3,1.3,.5,1);margin:auto}
+@keyframes up{from{transform:translateY(40px) scale(.95);opacity:0}}
+.pop h2{font-size:clamp(28px,8.5vw,36px)}
+.bigbox{width:48%}
+.bigbox svg{width:100%;height:auto;display:block}
+.bigbox .lid{transform-box:fill-box;transform-origin:0% 100%;animation:lid .8s .25s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes lid{from{transform:rotate(24deg) translate(0,10px)}}
+.bigbox .ray{animation:ray .6s .7s both}
+@keyframes ray{from{opacity:0;transform:scale(.4)}}
+
+/* ---------- perritas ---------- */
+.dogs{position:fixed;left:0;right:0;bottom:0;z-index:20;pointer-events:none;height:200px;overflow:hidden;padding-bottom:env(safe-area-inset-bottom,0px)}
+.dogs .floor{position:absolute;left:0;right:0;bottom:0;height:calc(26px + env(safe-area-inset-bottom,0px));background:#e9d6bd;border-top:3px solid #c9ad8a}
+.scene{position:absolute;left:0;right:0;bottom:0;width:100%;height:150px;overflow:visible;display:block}
+.scene *{transform-box:fill-box}
+.ol{stroke:#120a1a;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.ln{fill:none;stroke:#120a1a;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.earUp{transform-origin:15% 100%;animation:twitch 4.5s ease-in-out infinite}
+@keyframes twitch{0%,78%,100%{transform:rotate(0)}82%{transform:rotate(-12deg)}86%{transform:rotate(4deg)}90%{transform:rotate(-8deg)}94%{transform:rotate(0)}}
+.earFold{transform-origin:85% 10%;animation:flap 4.5s ease-in-out infinite;animation-delay:-2s}
+@keyframes flap{0%,80%,100%{transform:rotate(0)}86%{transform:rotate(10deg)}92%{transform:rotate(-3deg)}}
+.earL,.earR{transform-origin:50% 5%;animation:sway 3.2s ease-in-out infinite}
+.earR{animation-name:swayR;animation-delay:-.4s}
+@keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(5deg)}}
+@keyframes swayR{0%,100%{transform:rotate(0)}50%{transform:rotate(-5deg)}}
+.blink{transform-origin:50% 50%;animation:blink 4.2s infinite}
+#dogB .blink{animation-delay:1.4s}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.tilt{transform-origin:50% 100%;animation:tilt 6s ease-in-out infinite}
+#dogB .tilt{animation-delay:-3s}
+@keyframes tilt{0%,60%,100%{transform:rotate(0)}66%,82%{transform:rotate(-7deg)}}
+.peek{animation:peek 3.6s ease-in-out infinite}
+#dogB{animation-delay:-1.8s}
+@keyframes peek{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
+.wave{transform-origin:50% 100%;animation:wave 2.4s ease-in-out infinite}
+@keyframes wave{0%,40%,100%{transform:rotate(0)}50%{transform:rotate(12deg)}60%{transform:rotate(-6deg)}70%{transform:rotate(12deg)}80%{transform:rotate(-2deg)}}
+.pup.happy{animation:hop .5s ease-out 2}
+#dogB.happy{animation-delay:.12s}
+@keyframes hop{40%{transform:translateY(-22px)}70%{transform:translateY(0)}85%{transform:translateY(-6px)}}
+.cartel{position:absolute;left:50%;bottom:calc(118px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px) rotate(-2deg) scale(.6);opacity:0;background:var(--card);color:var(--ink);border:3px solid #120a1a;border-radius:16px;padding:8px 14px;text-align:center;font-family:var(--title);font-size:16px;line-height:1.2;white-space:nowrap;box-shadow:0 4px 0 #120a1a;transition:transform .45s cubic-bezier(.3,1.5,.5,1),opacity .3s}
+.cartel.on{transform:translate(-50%,0) rotate(-2deg) scale(1);opacity:1}
+.cartel small{display:block;font-family:var(--script);font-weight:700;font-size:22px;color:var(--rose)}
+.cartel:before,.cartel:after{content:"";position:absolute;bottom:-14px;width:3px;height:12px;background:#120a1a}
+.cartel:before{left:22%}.cartel:after{right:22%}
+
+@media (max-height:740px){
+  .dogs{height:150px}.scene{height:104px}
+  .cartel{bottom:calc(82px + env(safe-area-inset-bottom,0px));font-size:14px;padding:6px 12px}.cartel small{font-size:19px}
+  .in{padding-bottom:165px;gap:12px;padding-top:calc(18px + env(safe-area-inset-top,0px))}
+  .note{font-size:15px;line-height:1.55;padding:20px 16px 12px}
+  .big-emoji{font-size:60px}.script{font-size:26px}
+  .opt{padding:12px 14px;font-size:16px}
+  .mapwrap{padding-bottom:140px}
+}
+canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:40}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<script>
+/* =====================================================================
+   CONFIGURACIÓN — editá solo esta parte
+   correcta: número de la opción correcta (0 = la primera, 1 = la segunda…)
+             o "todas" si cualquier respuesta vale.
+   ===================================================================== */
+const FECHA = "26 de noviembre";
+
+const CARTA = [
+  "Que tengas un hermoso día y se te cumplan todos tus deseos.",
+  "Gracias por ser la mejor compañera y persona que existe, nos alegrás todos los días. No hay nada más lindo que compartir la vida con vos."
+];
+
+// Pregunta trampa del principio (ninguna respuesta es correcta)
+const BROMA = {
+  pregunta: "¿Cuántos segundos pasaron desde que nos conocimos?",
+  opciones: ["84.736.291", "91.204.558", "87.519.003", "89.662.147"]
+};
+
+const NIVELES = [
+  { categoria:"Nosotros",
+    pregunta:"¿En qué transporte público se dio cuenta Fede de que tenía que estar con Candelita?",
+    opciones:["Tren Sarmiento","Tren San Martín","Subte línea H","Tren Miguel"], correcta:0,
+    mensaje:"Ese viaje cambió todo. El mejor tren de mi vida 🚆",
+    regalo:"¡Sorpresa!", donde:"Preguntale a Fede" },
+
+  { categoria:"Familia",
+    pregunta:"Cande y Fede tienen 2 perritas. ¿Cómo se llaman?",
+    opciones:["Ramona y Claudia","Ester y María","Tiana y Filipa","Andrea y Bárbara"], correcta:2,
+    mensaje:"Tus hijas perrunas te mandan mil lengüetazos de feliz cumple 🐾",
+    cartel:["¡Esas somos nosotras! 🐾","Tiana y Filipa ♥"],
+    regalo:"¡Sorpresa!", donde:"Preguntale a Fede" },
+
+  { categoria:"Comida",
+    pregunta:"Estás muy contenta y tenés mucha hambre. ¿Qué elegiría primero Candelita?",
+    opciones:["Hamburguesita","Panchito","Milanesa con puré","Sushi","Todas, en ese orden"], correcta:4,
+    mensaje:"Obvio que todas. Te conozco más de lo que pensás 🍔🌭",
+    regalo:"¡Sorpresa!", donde:"Preguntale a Fede" },
+
+  { categoria:"Viajes",
+    pregunta:"Para terminar de organizar las vacaciones: ¿a qué país o lugar quiere ir Cande?",
+    opciones:["España e Italia","China","Brasil","Playa en Argentina"], correcta:"todas",
+    mensaje:"¡Correcto! Cualquier lugar es perfecto si es con vos ✈️",
+    regalo:"¡Sorpresa!", donde:"Preguntale a Fede" },
+
+  // PREGUNTA FINAL
+  { categoria:"Pregunta final",
+    pregunta:"¿Qué estaba comiendo Fede en su auto cuando se dijeron «te quiero» por primera vez?",
+    opciones:["Nada","Empanada de jamón y queso fría","Panchito","Sanguchito de miga"], correcta:1,
+    mensaje:"Fría y todo, fue la mejor empanada de mi vida 🥟❤️",
+    regalo:"El gran regalo", donde:"Preguntale a Fede" }
+];
+
+// Carta que aparece al responder la pregunta final, antes del gran regalo
+const CARTA_FINAL = [
+  "Llegaste al final del juego. Espero que te haya gustado.",
+  "No son grandes recompensas, porque te merecés mucho más. Te amo con todo mi corazón: me hacés la persona más feliz del mundo y no hay cosa más linda que compartir la vida con vos.",
+  "Te amo mucho mi Candelita."
+];
+const FIRMA_FINAL = "De Fede, Tianita y Fili ❤️";
+const MENSAJE_FINAL = "Gracias por jugar. ¡Que tengas el mejor cumple del mundo!";
+/* ===================================================================== */
+</script>
+
+<!-- ===== PANTALLAS ===== -->
+<section class="screen" id="sCarta" hidden><div class="in center">
+  <div class="script" id="fecha"></div>
+  <h1>Feliz cumpleaños, mi amor</h1>
+  <div class="note"><span class="tape"></span><div id="cartaTxt"></div><p class="firma">Te amo ♥</p></div>
+  <button class="cta" id="bCarta">Seguir →</button>
+</div></section>
+
+<section class="screen" id="sAviso" hidden><div class="in center">
+  <div class="script">Atención, cumpleañera…</div>
+  <h1>¡¡¡AVISO!!!</h1>
+  <div class="note"><span class="tape"></span>Para desbloquear tus regalos vas a tener que superar este <b>difícil desafío</b>: <b>5 preguntas de ALTÍSIMO NIVEL</b> que se van a ir desbloqueando paso a paso hasta llegar al objetivo final.<br>Te deseo suerte. Pensá bien cada respuesta…</div>
+  <div><div class="script" style="font-size:26px">solo tenés 2 vidas</div><div class="hp">❤️❤️</div></div>
+  <button class="cta" id="bAviso">Acepto el desafío ♥</button>
+</div></section>
+
+<main id="mapScreen" hidden>
+  <div class="hd"><span class="stamp" id="stampDia">TU DÍA</span><span class="prog" id="prog"></span></div>
+  <div class="mapwrap"><div class="map" id="map"></div>
+    <button class="reset" id="bReset" type="button">Reiniciar juego</button>
+  </div>
+</main>
+
+<section class="screen" id="sPreg" hidden><div class="in">
+  <div class="top"><span class="stamp" id="pStamp"></span><span class="hp" id="pHp"></span></div>
+  <p class="q" id="pQ"></p>
+  <div class="opts" id="pOpts"></div>
+  <p class="fb" id="pFb" aria-live="polite"></p>
+  <button class="reset" id="bVolver" type="button" style="color:var(--muted)">← Volver al mapa</button>
+</div></section>
+
+<section class="screen" id="sOver" hidden><div class="in center">
+  <div class="top"><span class="stamp" id="oStamp"></span><span class="hp"><span class="off">❤️❤️</span></span></div>
+  <div class="big-emoji">💀</div>
+  <h1 style="font-size:clamp(46px,15vw,60px);color:var(--ink);text-shadow:3px 3px 0 #c9b6a2">GAME OVER</h1>
+  <div class="note" style="transform:rotate(-1deg)"><span class="tape"></span>Te quedaste sin vidas… El desafío era de ALTÍSIMO NIVEL y no lo lograste. Vas a tener que empezar todo de nuevo.</div>
+  <div class="script" style="font-size:24px;opacity:.6">esperá un segundo…</div>
+</div></section>
+
+<section class="screen" id="sPerdon" hidden><div class="in center">
+  <div class="big-emoji" id="perEmoji">😘</div>
+  <h1>¡Mentira!</h1>
+  <div class="script" style="font-size:34px" id="perSub"></div>
+  <div class="note"><span class="tape"></span><span id="perTxt"></span></div>
+  <div class="hp" style="font-size:40px">❤️❤️</div>
+  <button class="cta" id="bPerdon"></button>
+</div></section>
+
+<section class="screen" id="sFelic" hidden><div class="in center">
+  <div class="script">¡Atención, cumpleañera!</div>
+  <h1 style="font-size:clamp(28px,9vw,40px)">¡¡¡FELICITA&shy;CIONES!!!</h1>
+  <div class="note"><span class="tape"></span>Llegaste al final del desafío. Después de un gran avance con tus respuestas, <b>lograste llegar hasta acá</b> y ahora competís por el <b>objetivo final</b>.<p class="firma" style="text-align:center;margin-top:6px!important">¡Éxitos!</p></div>
+  <div class="big-emoji" style="font-size:64px">👑</div>
+  <button class="cta" id="bFelic">Ir a la pregunta final →</button>
+</div></section>
+
+<section class="screen" id="sCartaFin" hidden><div class="in center">
+  <div class="script">Para vos, Candelita</div>
+  <h1>¡Feliz cumpleaños!</h1>
+  <div class="note"><span class="tape"></span><div id="cfTxt"></div><p class="firma" id="cfFirma" style="font-size:24px;text-align:center"></p></div>
+  <button class="cta" id="bCartaFin">Abrir mi gran regalo 🎁</button>
+</div></section>
+
+<section class="screen" id="sFinal" hidden><div class="in center">
+  <div class="script">¡Lo lograste!</div>
+  <h1>Superaste el desafío</h1>
+  <div class="bigbox" id="finBox"></div>
+  <div class="note"><span class="tape"></span><span id="finTxt"></span><p class="firma">Te amo ♥</p></div>
+  <div class="ticket"><small>🎁 TU GRAN REGALO</small><b id="finDonde"></b></div>
+  <button class="cta" id="bFinMapa" style="background:var(--card);color:var(--rose);box-shadow:0 5px 0 #e2cdb2">Ver el mapa</button>
+</div></section>
+
+<div class="ovl" id="ovl" hidden><div class="pop" id="pop"></div></div>
+
+<!-- ===== PERRITAS ===== -->
+<div class="dogs" id="dogs" aria-hidden="true">
+  <div class="cartel" id="cartel"><span id="c1">¡Te amamos, mamita! 🐾</span><small id="c2">Feliz cumple ♥</small></div>
+  <div class="floor"></div>
+  <svg class="scene" viewBox="0 0 400 140" preserveAspectRatio="xMidYMax meet">
+    <g transform="translate(52 22)"><g class="peek pup" id="dogA"><g class="tilt">
+      <path class="earFold ol" d="M34 36 C24 30 12 34 9 46 C7 55 13 62 21 59 C25 52 29 46 38 43Z" fill="#3a3540"/>
+      <path class="ln" d="M28 40 C21 42 17 48 17 54"/>
+      <g class="earUp">
+        <path class="ol" d="M80 32 C85 19 95 10 105 7 C110 19 107 35 98 47Z" fill="#3a3540"/>
+        <path d="M86 31 C91 23 97 17 102 15 C104 23 102 33 96 40Z" fill="#8f8898"/>
+        <path class="ln" d="M90 34 l3 -4 M94 38 l3 -3"/>
+      </g>
+      <path class="ol" d="M24 88 C21 76 21 60 26 48 L22 44 L28 42 C33 31 45 24 60 24 C75 24 87 31 92 42 L98 44 L94 48 C99 60 99 76 96 88Z" fill="#3a3540"/>
+      <path class="ln" d="M50 31 c3 -4 6 -4 7 0" style="stroke:#8f8898"/>
+      <path class="ol" d="M55 31 C56 26 64 26 65 31 L68 55 C77 59 83 70 81 88 L39 88 C37 70 43 59 52 55Z" fill="#fff8ef"/>
+      <g class="blink"><circle cx="42" cy="58" r="5.6" fill="#120a1a"/><circle cx="43.8" cy="56.2" r="1.7" fill="#fff"/></g>
+      <g class="blink"><circle cx="78" cy="58" r="5.6" fill="#120a1a"/><circle cx="79.8" cy="56.2" r="1.7" fill="#fff"/></g>
+      <ellipse cx="60" cy="70" rx="8.5" ry="6.2" fill="#120a1a"/><ellipse cx="57.4" cy="68" rx="2.6" ry="1.4" fill="#fff" opacity=".5"/>
+      <path class="ln" d="M60 76 v2 M53 78 q3.5 4 7 0 q3.5 4 7 0"/>
+    </g>
+      <path class="ol" d="M22 92 C21 80 43 80 42 92Z" fill="#fff8ef"/><path class="ln" d="M29 92 v-4 M35 92 v-4"/>
+      <g class="wave">
+        <path class="ol" d="M84 92 C83 74 85 58 87 48 C89 39 104 39 104 48 C104 60 102 78 102 92Z" fill="#fff8ef"/>
+        <ellipse cx="95.5" cy="52" rx="4.6" ry="4" fill="#ff9fb3"/>
+        <circle cx="89.5" cy="45.5" r="2" fill="#ff9fb3"/><circle cx="95.5" cy="43.2" r="2" fill="#ff9fb3"/><circle cx="101" cy="45.5" r="2" fill="#ff9fb3"/>
+      </g>
+    </g></g>
+    <g transform="translate(232 22)"><g class="peek pup" id="dogB"><g class="tilt">
+      <path class="ol" d="M30 88 C26 66 29 42 41 31 C51 22 69 22 79 31 C91 42 94 66 90 88Z" fill="#e8b468"/>
+      <path class="ol" d="M50 28 C49 22 54 19 57 23 C58 17 64 17 64 23 C67 19 72 22 70 28Z" fill="#e8b468"/>
+      <path class="ol" d="M44 76 C42 64 50 58 60 58 C70 58 78 64 76 76 C74 86 46 86 44 76Z" fill="#f4d394"/>
+      <g class="blink"><circle cx="46" cy="52" r="5.2" fill="#120a1a"/><circle cx="47.7" cy="50.3" r="1.6" fill="#fff"/></g>
+      <g class="blink"><circle cx="74" cy="52" r="5.2" fill="#120a1a"/><circle cx="75.7" cy="50.3" r="1.6" fill="#fff"/></g>
+      <ellipse cx="60" cy="66" rx="8" ry="6" fill="#120a1a"/><ellipse cx="57.5" cy="64" rx="2.6" ry="1.4" fill="#fff" opacity=".5"/>
+      <path class="ln" d="M60 72 v2 M53.5 74 q3.25 4 6.5 0 q3.25 4 6.5 0"/>
+      <circle cx="40" cy="66" r="3.4" fill="#ff7aa5" opacity=".55"/><circle cx="80" cy="66" r="3.4" fill="#ff7aa5" opacity=".55"/>
+      <path class="earL ol" d="M42 32 C30 32 20 44 18 60 L13 66 L19 68 L14 76 L21 77 L18 86 L27 83 L30 89 L34 82 C38 72 40 56 46 40Z" fill="#c98a38"/>
+      <path class="earR ol" d="M78 32 C90 32 100 44 102 60 L107 66 L101 68 L106 76 L99 77 L102 86 L93 83 L90 89 L86 82 C82 72 80 56 74 40Z" fill="#c98a38"/>
+    </g>
+      <path class="ol" d="M30 92 C29 80 51 80 50 92Z" fill="#e8b468"/><path class="ln" d="M37 92 v-4 M43 92 v-4"/>
+      <path class="ol" d="M70 92 C69 80 91 80 90 92Z" fill="#e8b468"/><path class="ln" d="M77 92 v-4 M83 92 v-4"/>
+    </g></g>
+  </svg>
+</div>
+<canvas id="fx"></canvas>
+
+<script>
+const $=s=>document.querySelector(s);
+const KEY="cumple-cande-v2";
+const N=NIVELES.length;
+let S={step:"carta",done:0,broma:false,felic:false};
+try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){}
+if(new URLSearchParams(location.search).has("reiniciar")) S={step:"carta",done:0,broma:false,felic:false};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+
+/* ---------- paquetes ---------- */
+const COLS=["#f29bb0","#9fd3c7","#c9b6e4","#ffd27a","#ff8a8a"];
+function BOX(c,open){
+  const r="#fffdf7", k="#3a2a2a";
+  if(!open) return `<svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="94" rx="36" ry="5" fill="rgba(80,40,20,.15)"></ellipse>
+  <rect x="16" y="44" width="68" height="48" rx="5" fill="${c}" stroke="${k}" stroke-width="3"></rect>
+  <rect x="11" y="32" width="78" height="16" rx="4" fill="${c}" stroke="${k}" stroke-width="3"></rect>
+  <rect x="44" y="32" width="12" height="60" fill="${r}" stroke="${k}" stroke-width="3"></rect>
+  <path d="M50 32 C40 14 22 16 28 28 C31 33 42 33 50 32Z M50 32 C60 14 78 16 72 28 C69 33 58 33 50 32Z" fill="${r}" stroke="${k}" stroke-width="3" stroke-linejoin="round"></path>
+  <circle cx="50" cy="31" r="5" fill="${r}" stroke="${k}" stroke-width="3"></circle>
+  <circle cx="28" cy="60" r="3" fill="rgba(255,255,255,.55)"></circle><circle cx="72" cy="76" r="3" fill="rgba(255,255,255,.55)"></circle><circle cx="32" cy="82" r="2.4" fill="rgba(255,255,255,.55)"></circle><circle cx="70" cy="56" r="2.4" fill="rgba(255,255,255,.55)"></circle></svg>`;
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="94" rx="36" ry="5" fill="rgba(80,40,20,.15)"></ellipse>
+  <g class="ray"><path d="M30 40 l-6 -12 M50 34 v-14 M70 40 l6 -12" stroke="#ffc83d" stroke-width="3.5" stroke-linecap="round"></path></g>
+  <rect x="16" y="48" width="68" height="44" rx="5" fill="${c}" stroke="${k}" stroke-width="3"></rect>
+  <rect x="44" y="48" width="12" height="44" fill="${r}" stroke="${k}" stroke-width="3"></rect>
+  <g class="lid"><g transform="rotate(-24 14 40)"><rect x="6" y="30" width="78" height="15" rx="4" fill="${c}" stroke="${k}" stroke-width="3"></rect><rect x="39" y="30" width="12" height="15" fill="${r}" stroke="${k}" stroke-width="3"></rect></g></g>
+  <circle cx="50" cy="46" r="6" fill="#ff5d8f" stroke="${k}" stroke-width="2.5"></circle></svg>`;
+}
+
+/* ---------- pantallas ---------- */
+const SCREENS=["#sCarta","#sAviso","#sPreg","#sOver","#sPerdon","#sFelic","#sCartaFin","#sFinal"];
+function show(id){
+  SCREENS.forEach(s=>$(s).hidden=s!==id);
+  $("#mapScreen").hidden= id!=="#map";
+  if(id!=="#map") $(id).scrollTop=0;
+}
+
+$("#fecha").textContent=FECHA;
+$("#stampDia").textContent="TU DÍA · "+FECHA.split(" ")[0]+"/11";
+$("#cartaTxt").innerHTML=CARTA.map(p=>`<p>${p}</p>`).join("");
+$("#bCarta").onclick=()=>{S.step="aviso";save();show("#sAviso")};
+$("#bAviso").onclick=()=>{S.step="map";save();confetti();dogsHappy();goMap(true)};
+
+/* ---------- mapa ---------- */
+const P=[[180,940],[95,800],[265,660],[95,520],[265,380],[180,180]];
+const pct=(x,y)=>`left:${x/360*100}%;top:${y/980*100}%`;
+const ICON={check:`<svg viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>`,
+            lock:`<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2.5" fill="currentColor"></rect><path d="M8 10V8a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="2.5"></path></svg>`};
+function seg(a,b){const[ax,ay]=a,[bx,by]=b,my=(ay+by)/2;return ` C${ax} ${my} ${bx} ${my} ${bx} ${by}`}
+function drawMap(popIdx){
+  let d=`M${P[0][0]} ${P[0][1]}`, dd=d;
+  for(let k=1;k<P.length;k++){d+=seg(P[k-1],P[k]); if(k<=S.done) dd+=seg(P[k-1],P[k]);}
+  let h=`<svg viewBox="0 0 360 980" aria-hidden="true">
+    <path d="${d}" fill="none" stroke="#e7d2b6" stroke-width="40" stroke-linecap="round"></path>
+    <path d="${d}" fill="none" stroke="#fffdf7" stroke-width="30" stroke-linecap="round"></path>
+    ${S.done?`<path d="${dd}" fill="none" stroke="#f29bb0" stroke-width="30" stroke-linecap="round"></path>`:""}
+    <path d="${d}" fill="none" stroke="#c2415d" stroke-opacity=".35" stroke-width="3" stroke-dasharray="1 12" stroke-linecap="round"></path></svg>
+    <span class="start" style="${pct(...P[0])}">SALIDA</span>`;
+  [["🌸",30,130],["💌",310,250],["🐾",40,330],["🌷",320,470],["✨",30,640],["🐾",320,760],["🌸",40,900],["💕",320,900],["⭐",300,110]].forEach(([e,x,y])=>h+=`<span class="stk" style="${pct(x,y)}">${e}</span>`);
+  for(let i=0;i<N;i++){
+    const [x,y]=P[i+1], fin=i===N-1, st=i<S.done?"done":i===S.done?"cur":"lock";
+    const inner= st==="done"?ICON.check : fin?"👑" : st==="lock"?ICON.lock : String(i+1);
+    h+=`<button class="node ${st}${fin?" fin":""}" data-i="${i}" style="${pct(x,y)}" aria-label="${fin?"Pregunta final":"Nivel "+(i+1)}${st==="done"?", completado":st==="lock"?", bloqueado":", jugar"}">${inner}</button>`;
+    if(st==="done") h+=`<span class="stars" style="${pct(x,y+(fin?62:44))}">⭐⭐⭐</span>`;
+    h+=`<span class="lbl" style="${pct(x,y+(fin?74:st==="done"?54:42))}">${fin?"EL GRAN REGALO":"NIVEL "+(i+1)}</span>`;
+    const gx= fin?300 : x<180?x+92:x-92, gy= fin?y+10:y-6, op=i<S.done;
+    h+=`<div class="pk${op?"":" cl"}${popIdx===i?" opened":""}" style="${pct(gx,gy)}">${BOX(COLS[i%5],op)}<span class="tag"><b>${fin?"REGALO 5 · GRAN":"REGALO "+(i+1)}</b>${op?"📍 "+NIVELES[i].donde:""}</span></div>`;
+  }
+  const me=P[Math.min(S.done+1,N)];
+  h+=`<div class="me" style="${pct(me[0],me[1]-(S.done>=N-1?58:38))}"><div class="b">👸</div></div>`;
+  $("#map").innerHTML=h;
+  $("#map").querySelectorAll(".node").forEach(b=>b.onclick=()=>tapNode(+b.dataset.i));
+  $("#prog").textContent=`🎁 ${S.done} / ${N}`;
+}
+function goMap(scroll,popIdx){
+  show("#map"); drawMap(popIdx);
+  if(scroll){ const n=$("#map").querySelector(".node.cur")||$("#map").querySelector(".node.fin"); setTimeout(()=>n&&n.scrollIntoView({behavior:"smooth",block:"center"}),80); }
+}
+function tapNode(i){
+  if(i>S.done){ const b=$(`.node[data-i="${i}"]`); b.animate([{translate:"0"},{translate:"-6px"},{translate:"6px"},{translate:"0"}],{duration:300}); return; }
+  if(i<S.done){ openPrize(i,false); return; }
+  if(i===0 && !S.broma){ startBroma(); return; }
+  if(i===N-1 && !S.felic){ show("#sFelic"); return; }
+  ask(i);
+}
+$("#bFelic").onclick=()=>{S.felic=true;save();ask(N-1)};
+
+/* ---------- preguntas ---------- */
+let lives=2, cur=null, isBroma=false, busy=false;
+function hearts(){ $("#pHp").innerHTML= lives===2?"❤️❤️": lives===1?`❤️<span class="off">❤️</span>`:`<span class="off">❤️❤️</span>`; }
+function renderQ(stamp,q,opts,big){
+  $("#pStamp").textContent=stamp; $("#pQ").textContent=q; $("#pFb").textContent=big?"":"";
+  $("#pOpts").innerHTML=opts.map((o,k)=>`<button class="opt${big?" big":""}" data-k="${k}">${o}</button>`).join("");
+  hearts(); show("#sPreg"); busy=false;
+}
+function startBroma(){
+  isBroma=true; lives=2; cur=0;
+  renderQ("PREGUNTA 1 DE 5",BROMA.pregunta,BROMA.opciones,true);
+  $("#pFb").innerHTML=`<span style="opacity:.7">pensalo bien…</span>`;
+  $("#pOpts").querySelectorAll(".opt").forEach(b=>b.onclick=()=>wrong(b));
+}
+function ask(i){
+  isBroma=false; cur=i; lives=2;
+  const L=NIVELES[i], fin=i===N-1;
+  renderQ(fin?"PREGUNTA FINAL":`PREGUNTA ${i+1} DE 5`,L.pregunta,L.opciones,false);
+  $("#pOpts").querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    if(busy||b.classList.contains("no")) return;
+    const k=+b.dataset.k;
+    if(L.correcta==="todas"||k===L.correcta) right(b); else wrong(b);
+  });
+}
+function wrong(b){
+  if(busy||b.classList.contains("no")) return;
+  b.classList.add("no"); lives--; hearts();
+  if(navigator.vibrate) try{navigator.vibrate(120)}catch(e){}
+  if(lives>0){ $("#pFb").textContent="¡Uy, no! Te queda una sola vida…"; return; }
+  busy=true; $("#pFb").textContent="¡Uy, no!";
+  setTimeout(()=>{
+    $("#oStamp").textContent=$("#pStamp").textContent; show("#sOver");
+    setTimeout(()=>{
+      if(isBroma){
+        $("#perEmoji").textContent="😂"; $("#perSub").textContent="esa no la sabe nadie";
+        $("#perTxt").innerHTML="Era una pregunta trampa, tranqui. <b>No cuenta</b>. Te devuelvo tus 2 vidas y ahora sí… empiezan las preguntas de verdad.";
+        $("#bPerdon").textContent="Ahora sí, en serio ♥";
+        $("#bPerdon").onclick=()=>{S.broma=true;save();ask(0)};
+      } else {
+        $("#perEmoji").textContent="😘"; $("#perSub").textContent="te perdono, mi amor";
+        $("#perTxt").innerHTML="Por ser tu cumple te regalo <b>2 vidas nuevas</b>. Seguís desde donde estabas.";
+        $("#bPerdon").textContent="Seguir jugando ♥";
+        $("#bPerdon").onclick=()=>ask(cur);
+      }
+      show("#sPerdon"); confetti(); dogsHappy();
+    },3600);
+  },700);
+}
+function right(b){
+  busy=true; b.classList.add("si");
+  $("#pFb").textContent="¡Correcto!";
+  const i=cur; S.done=Math.max(S.done,i+1); save();
+  confetti(); dogsHappy();
+  if(NIVELES[i].cartel) cartelSpecial(NIVELES[i].cartel);
+  if(i===N-1){ setTimeout(()=>{ $("#cfTxt").innerHTML=CARTA_FINAL.map(p=>`<p>${p}</p>`).join(""); $("#cfFirma").textContent=FIRMA_FINAL; show("#sCartaFin"); dogsHappy(); },900); return; }
+  setTimeout(()=>{ goMap(false); openPrize(i,true); },800);
+}
+$("#bVolver").onclick=()=>goMap(true);
+
+/* ---------- cartel de regalo desbloqueado ---------- */
+function openPrize(i,fresh){
+  const L=NIVELES[i], fin=i===N-1;
+  $("#pop").innerHTML=`
+    ${fresh?`<div class="script">¡Lo lograste!</div>`:""}
+    <h2>${fresh?(fin?"¡Desbloqueaste el GRAN REGALO! 👑":`¡Desbloqueaste el regalo ${i+1}! 🎁`):(fin?"El gran regalo":`Regalo ${i+1}`)}</h2>
+    <div class="bigbox">${BOX(COLS[i%5],true)}</div>
+    <span class="stamp" style="margin-top:-4px">${fin?"REGALO 5 · GRAN REGALO":"REGALO "+(i+1)}</span>
+    <div class="script" style="font-size:26px">${L.regalo}</div>
+    <div class="note" style="transform:rotate(-.8deg);font-size:16px"><span class="tape"></span>${L.mensaje}</div>
+    <div class="ticket"><small>🎁 TU REGALO ESTÁ…</small><b>${L.donde}</b></div>
+    <button class="cta" id="bPop">${fin&&fresh?"Ver el final →":fresh?"Ver mis regalos →":"Cerrar"}</button>`;
+  $("#ovl").hidden=false;
+  if(fresh) setTimeout(confetti,250);
+  $("#bPop").onclick=()=>{
+    $("#ovl").hidden=true;
+    if(fin&&fresh){ showFinal(); return; }
+    if(fresh) goMap(true,i);
+  };
+}
+$("#ovl").addEventListener("click",e=>{ if(e.target.id==="ovl" && !$("#bPop").textContent.includes("Ver")) $("#ovl").hidden=true; });
+
+function showFinal(){
+  $("#finBox").innerHTML=BOX(COLS[4],true);
+  $("#finTxt").textContent=MENSAJE_FINAL;
+  $("#finDonde").textContent=NIVELES[N-1].donde;
+  show("#sFinal"); confetti(); setTimeout(confetti,900); dogsHappy();
+}
+$("#bFinMapa").onclick=()=>goMap(true);
+$("#bCartaFin").onclick=()=>{ goMap(false); openPrize(N-1,true); };
+
+/* ---------- reiniciar ---------- */
+$("#bReset").onclick=()=>{
+  $("#pop").innerHTML=`<h2 style="font-size:28px">¿Reiniciar el juego?</h2><p style="margin:0">Se borra todo el avance y empieza desde la carta.</p>
+    <button class="cta" id="rSi">Sí, reiniciar</button><button class="reset" id="rNo">Cancelar</button>`;
+  $("#ovl").hidden=false;
+  $("#rNo").onclick=()=>$("#ovl").hidden=true;
+  $("#rSi").onclick=()=>{S={step:"carta",done:0,broma:false,felic:false};save();$("#ovl").hidden=true;show("#sCarta")};
+};
+
+/* ---------- perritas y cartel ---------- */
+const cartel=$("#cartel"); let special=0;
+function cartelLoop(){ cartel.classList.add("on"); setTimeout(()=>{ if(Date.now()>special) cartel.classList.remove("on"); },3500); }
+setTimeout(cartelLoop,1200); setInterval(cartelLoop,9000);
+function cartelSpecial([a,b]){
+  special=Date.now()+6000; $("#c1").textContent=a; $("#c2").textContent=b; cartel.classList.add("on");
+  setTimeout(()=>{ cartel.classList.remove("on"); setTimeout(()=>{$("#c1").textContent="¡Te amamos, mamita! 🐾";$("#c2").textContent="Feliz cumple ♥";},500); },6000);
+}
+function dogsHappy(){ ["#dogA","#dogB"].forEach(s=>{const d=$(s); d.classList.remove("happy"); void d.getBoundingClientRect(); d.classList.add("happy");}); }
+
+/* ---------- confeti ---------- */
+const cv=$("#fx"), cx=cv.getContext("2d"); let parts=[], raf=null;
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const dpr=devicePixelRatio||1; cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
+  const cols=["#c2415d","#f4b8c4","#ffd34d","#3b9a63","#c9b6e4","#7fb3ff","#ff8a8a"];
+  for(let k=0;k<140;k++) parts.push({x:cv.width/2,y:cv.height*.4,vx:(Math.random()-.5)*13*dpr,vy:(-Math.random()*13-3)*dpr,r:(Math.random()*5+3)*dpr,c:cols[k%cols.length],a:Math.random()*6,life:0});
+  if(!raf) tick();
+}
+function tick(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts.forEach(p=>{p.vy+=.35*(devicePixelRatio||1); p.vx*=.985; p.x+=p.vx; p.y+=p.vy; p.a+=.2; p.life++;
+    cx.save(); cx.translate(p.x,p.y); cx.rotate(p.a); cx.fillStyle=p.c; cx.fillRect(-p.r,-p.r/2,p.r*2,p.r); cx.restore();});
+  parts=parts.filter(p=>p.y<cv.height+40&&p.life<260);
+  raf=parts.length?requestAnimationFrame(tick):(cx.clearRect(0,0,cv.width,cv.height),null);
+}
+
+/* ---------- arranque ---------- */
+if(S.step==="carta") show("#sCarta");
+else if(S.step==="aviso") show("#sAviso");
+else if(S.done>=N) showFinal();
+else goMap(true);
+</script>
+</body>
+</html>
